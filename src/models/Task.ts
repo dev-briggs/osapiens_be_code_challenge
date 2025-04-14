@@ -2,7 +2,7 @@ import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from "typeorm";
 import { Workflow } from "./Workflow";
 import { TaskStatus } from "../workers/taskRunner";
 import { Stringified } from "../types";
-import type { Output } from "../jobs/PolygonAreaJob";
+import type { Output } from "../types/tasks";
 
 @Entity({ name: "tasks" })
 export class Task {
