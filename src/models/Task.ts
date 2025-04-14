@@ -1,33 +1,38 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
-import { Workflow } from './Workflow';
-import {TaskStatus} from "../workers/taskRunner";
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from "typeorm";
+import { Workflow } from "./Workflow";
+import { TaskStatus } from "../workers/taskRunner";
+import { Stringified } from "../types";
+import type { Output } from "../jobs/PolygonAreaJob";
 
-@Entity({ name: 'tasks' })
+@Entity({ name: "tasks" })
 export class Task {
-    @PrimaryGeneratedColumn('uuid')
-    taskId!: string;
+  @PrimaryGeneratedColumn("uuid")
+  taskId!: string;
 
-    @Column()
-    clientId!: string;
+  @Column()
+  clientId!: string;
 
-    @Column('text')
-    geoJson!: string;
+  @Column("text")
+  geoJson!: string;
 
-    @Column()
-    status!: TaskStatus;
+  @Column()
+  status!: TaskStatus;
 
-    @Column({ nullable: true, type: 'text' })
-    progress?: string | null;
+  @Column({ nullable: true, type: "text" })
+  progress?: string | null;
 
-    @Column({ nullable: true })
-    resultId?: string;
+  @Column({ nullable: true })
+  resultId?: string;
 
-    @Column()
-    taskType!: string;
+  @Column()
+  taskType!: string;
 
-    @Column({ default: 1 })
-    stepNumber!: number;
+  @Column({ default: 1 })
+  stepNumber!: number;
 
-    @ManyToOne(() => Workflow, workflow => workflow.tasks)
-    workflow!: Workflow;
+  @Column({ nullable: true, type: "text" })
+  output?: Stringified<Output> | null;
+
+  @ManyToOne(() => Workflow, (workflow) => workflow.tasks)
+  workflow!: Workflow;
 }
