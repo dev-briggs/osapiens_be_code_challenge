@@ -1,3 +1,276 @@
+## New Features
+
+### 1. Polygon Area Calculation Job
+This job calculates the area of a polygon from the GeoJSON provided in the task.
+
+#### Testing:
+1. Add a task with `taskType: "polygonArea"` to a workflow YAML file.
+2. Start the application and create a workflow using the `/analysis` endpoint.
+   ```bash
+   curl -X POST http://localhost:3000/analysis \
+   -H "Content-Type: application/json" \
+   -d '{
+    "clientId": "client123",
+    "geoJson": {
+        "type": "Polygon",
+        "coordinates": [
+            [
+                [
+                    -63.624885020050996,
+                    -10.311050368263523
+                ],
+                [
+                    -63.624885020050996,
+                    -10.367865108370523
+                ],
+                [
+                    -63.61278302732815,
+                    -10.367865108370523
+                ],
+                [
+                    -63.61278302732815,
+                    -10.311050368263523
+                ],
+                [
+                    -63.624885020050996,
+                    -10.311050368263523
+                ]
+            ]
+        ]
+    }
+    }'
+   ```
+3. Check the task's `output` field in the database or logs in the terminal for the calculated area.
+
+### On Success:
+- The task's `output` field should contain the calculated area and specified unit (square meters)
+
+### On Failure:
+- The task's `output` field should contain the error message
+- The task's `status` is set to `failed`
+
+### Notes:
+GeoJSON object is validated based on RFC 7946. (see https://datatracker.ietf.org/doc/html/rfc7946#section-3)
+
+---
+
+### 2. Report Generation Job
+This job aggregates the outputs of all preceding tasks (based on `stepNumber`) in a workflow into a JSON report.
+
+#### Testing:
+1. Add a task with `taskType: "reportGeneration"` and specify `stepNumber` in a workflow YAML file.
+2. Start the application and create a workflow using the `/analysis` endpoint.
+3. Check the task's `output` field in the database or logs for the generated report.
+4. Ensure the job runs only after all preceding tasks are complete.
+
+### On Success:
+- The task's `output` field should contain the aggregated outputs from preceding tasks in the same workflow.
+- The tasks's `finalReport` field should contain information if any tasks within the workflow failed or if every task successfully completed
+
+
+### On Failure:
+- The task's `output` field should contain the error message
+- The task's `status` is set to `failed`
+
+### Notes:
+Preceding tasks are determined by `stepNumber` specified in the workflow YAML file.
+---
+
+### 3. Interdependent Tasks in Workflows
+Tasks can now depend on the outputs of earlier tasks.
+
+#### Testing:
+1. Update a workflow YAML file to include `dependsOn` for tasks:
+   ```yaml
+   steps:
+     - taskType: "polygonArea"
+       stepNumber: 1
+     - taskType: "dataAnalysis"
+       stepNumber: 2
+       dependsOn: 1
+   ```
+2. Start the application and create a workflow using the `/analysis` endpoint.
+3. Verify that the dependent task waits for its dependency to complete and uses its output.
+
+### On Success:
+- The task's `input` field should contain the `output` of the task it depends on.
+
+### On Failure:
+- Normal flow for task failure
+- The task's `input` field should contain the `output` of the task it depends on. (error message)
+
+### Notes:
+Failing prerequisite tasks will still set the `output` of the dependent task using its `input`
+
+---
+
+### 4. Final Workflow Results
+The aggregated results of all tasks in a workflow are saved in the `finalResult` field of the `Workflow` entity.
+
+#### Testing:
+1. Create a workflow with multiple tasks.
+2. Wait for all tasks to complete.
+3. Check the `finalResult` field of the workflow in the database for the aggregated results.
+
+### On Success:
+- The workflow's `finalResult` field should contain the aggregated `output` of all completed tasks in the workflow.
+
+### On Failure:
+- The workflow's `finalResult` field should contain the aggregated `output` of all failing tasks in the workflow. (error messages)
+
+### Notes:
+`finalResult` is not set for workflows that are still `in_progress`
+
+---
+
+### 5. Workflow Status Endpoint
+Retrieve the current status of a workflow.
+
+#### Endpoint:
+- **URL:** `/workflow/:id/status`
+- **Method:** `GET`
+
+#### Testing:
+1. Start the application and create a workflow using the `/analysis` endpoint.
+   ```bash
+   curl -X POST http://localhost:3000/analysis \
+   -H "Content-Type: application/json" \
+   -d '{
+    "clientId": "client123",
+    "geoJson": {
+        "type": "Polygon",
+        "coordinates": [
+            [
+                [
+                    -63.624885020050996,
+                    -10.311050368263523
+                ],
+                [
+                    -63.624885020050996,
+                    -10.367865108370523
+                ],
+                [
+                    -63.61278302732815,
+                    -10.367865108370523
+                ],
+                [
+                    -63.61278302732815,
+                    -10.311050368263523
+                ],
+                [
+                    -63.624885020050996,
+                    -10.311050368263523
+                ]
+            ]
+        ]
+    }
+    }'
+   ```
+2. Use the following command to check the status of the created workflow:
+   ```bash
+   curl -X GET http://localhost:3000/workflow/<workflow-id>/status
+   ```
+3. Verify the response includes the workflow status, completed tasks, and total tasks.
+
+### On Success:
+- Receive a response which includes number of completed tasks and the total number of tasks in the workflow
+```
+{
+    "workflowId": "12345",
+    "status": "in_progress", // "initial", "in_progress", "completed", "failed"
+    "completedTasks": 3,
+    "totalTasks": 5
+}
+ ```
+
+### On Failure:
+- Receive a response with a corresponding error status and message:
+    - 404 - Workflow not found
+    - 500 - Failed to fetch workflow results
+
+### Notes:
+Make sure a workflow is created and the schema is not cleared before accessing this API
+
+---
+
+### 6. Workflow Results Endpoint
+Retrieve the final results of a completed workflow.
+
+#### Endpoint:
+- **URL:** `/workflow/:id/results`
+- **Method:** `GET`
+
+#### Testing:
+1. Start the application and create a workflow using the `/analysis` endpoint.
+   ```bash
+   curl -X POST http://localhost:3000/analysis \
+   -H "Content-Type: application/json" \
+   -d '{
+    "clientId": "client123",
+    "geoJson": {
+        "type": "Polygon",
+        "coordinates": [
+            [
+                [
+                    -63.624885020050996,
+                    -10.311050368263523
+                ],
+                [
+                    -63.624885020050996,
+                    -10.367865108370523
+                ],
+                [
+                    -63.61278302732815,
+                    -10.367865108370523
+                ],
+                [
+                    -63.61278302732815,
+                    -10.311050368263523
+                ],
+                [
+                    -63.624885020050996,
+                    -10.311050368263523
+                ]
+            ]
+        ]
+    }
+    }'
+   ```
+2. Use the following command to retrieve the results of a completed workflow:
+   ```bash
+   curl -X GET http://localhost:3000/workflow/<workflow-id>/results
+   ```
+3. Verify the response includes the `finalResult` field if the workflow is completed. If not, ensure appropriate error responses are returned.
+
+### On Success:
+- Receive a response which includes number of completed tasks and the total number of tasks in the workflow
+```
+{
+    "workflowId": "12345",
+    "status": "Completed",
+    "finalResult": {
+        "output": "[JSON Stringified output of the tasks in the workflow]",
+    }
+ }
+ ```
+
+### On Failure:
+- Receive a response with a corresponding error status and message:
+    - 400 - Workflow is not completed
+    - 404 - Workflow not found
+    - 500 - Failed to fetch workflow results
+
+### Notes:
+Make sure a workflow is created and the schema is not cleared before accessing this API
+
+---
+
+### Endnotes
+- Ensure the database is properly configured before testing.
+- Use the logs to debug any issues during task execution or workflow processing.
+
+---
+
 # Backend Coding Challenge
 
 This repository demonstrates a backend architecture that handles asynchronous tasks, workflows, and job execution using TypeScript, Express.js, and TypeORM. The project showcases how to:
@@ -290,6 +563,3 @@ Implement an API endpoint to retrieve the final results of a completed workflow.
 - **Documentation:**
    - Update the README file to include instructions for testing the new features.
    - Document the API endpoints with request and response examples.
-
----
-
