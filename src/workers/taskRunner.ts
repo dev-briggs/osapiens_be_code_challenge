@@ -44,7 +44,7 @@ export class TaskRunner {
       result.data = JSON.stringify(taskResult || {});
       await resultRepository.save(result);
       task.resultId = result.resultId!;
-      task.status = TaskStatus.Completed;
+      if (task.taskType !== "polygonArea") task.status = TaskStatus.Completed; // don't override status of polygonArea
       task.progress = null;
       await this.taskRepository.save(task);
     } catch (error: any) {
@@ -75,10 +75,16 @@ export class TaskRunner {
         (t) => t.status === TaskStatus.Failed
       );
 
+      const taskOutputs = currentWorkflow.tasks.map(
+        ({ output }) => output || ""
+      );
+
       if (anyFailed) {
         currentWorkflow.status = WorkflowStatus.Failed;
+        currentWorkflow.finalResult = taskOutputs.toString();
       } else if (allCompleted) {
         currentWorkflow.status = WorkflowStatus.Completed;
+        currentWorkflow.finalResult = taskOutputs.toString();
       } else {
         currentWorkflow.status = WorkflowStatus.InProgress;
       }

@@ -35,6 +35,7 @@ export async function checkDependencyTaskInWorkflowCompleted(
   const dependencyTask = await getDependencyTask(task);
 
   return dependencyTask
-    ? dependencyTask.status === TaskStatus.Completed
+    ? dependencyTask.status === TaskStatus.Completed ||
+        dependencyTask.status === TaskStatus.Failed
     : false;
 }
