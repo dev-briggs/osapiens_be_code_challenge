@@ -1,5 +1,5 @@
-import { AppDataSource } from "../../data-source";
 import { Task } from "../../models/Task";
+import { getDependencyTask, getTasksInSameWorkflow } from "../../utils/tasks";
 import { TaskStatus } from "../taskRunner";
 
 /**
@@ -9,14 +9,10 @@ import { TaskStatus } from "../taskRunner";
  * @param currentTask - The current task being processed.
  * @returns True if the task is ready to run, false otherwise.
  */
-export async function allPrecedingTasksCompletedOrFailed(
+export async function checkAllPrecedingTasksInWorkflowCompletedOrFailed(
   task: Task
 ): Promise<boolean> {
-  const taskRepository = AppDataSource.getRepository(Task);
-
-  const workflowTasks = await taskRepository.find({
-    where: { workflow: { workflowId: task.workflow.workflowId } },
-  });
+  const workflowTasks = await getTasksInSameWorkflow(task);
 
   // Use stepNumber to determine preceding tasks
   const precedingTasks = workflowTasks.filter(
@@ -29,4 +25,16 @@ export async function allPrecedingTasksCompletedOrFailed(
   );
 
   return allPrecedingTasksCompletedOrFailed;
+}
+
+export async function checkDependencyTaskInWorkflowCompleted(
+  task: Task
+): Promise<boolean> {
+  if (!task.dependsOn) return true;
+
+  const dependencyTask = await getDependencyTask(task);
+
+  return dependencyTask
+    ? dependencyTask.status === TaskStatus.Completed
+    : false;
 }

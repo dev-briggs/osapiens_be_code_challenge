@@ -3,7 +3,7 @@ import { Task } from "../models/Task";
 import { Stringified } from "../types";
 import { ReportOutput, ReportTask } from "../types/reports";
 import { TaskStatus } from "../workers/taskRunner";
-import { AppDataSource } from "../data-source";
+import { getTasksInSameWorkflow } from "../utils/tasks";
 
 /**
  * Class representing a job for generating reports based on task workflows.
@@ -28,11 +28,7 @@ export class ReportGenerationJob implements Job {
    */
   async run(task: Task): Promise<void> {
     try {
-      const taskRepository = AppDataSource.getRepository(Task);
-      const tasks = await taskRepository.find({
-        where: { workflow: { workflowId: task.workflow.workflowId } },
-        order: { stepNumber: "ASC" },
-      });
+      const tasks = await getTasksInSameWorkflow(task);
       const precedingTasks = tasks.filter(
         (t) => t.stepNumber < task.stepNumber
       );

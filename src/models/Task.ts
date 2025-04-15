@@ -1,4 +1,10 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from "typeorm";
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  JoinColumn,
+} from "typeorm";
 import { Workflow } from "./Workflow";
 import { TaskStatus } from "../workers/taskRunner";
 import { Stringified } from "../types";
@@ -31,8 +37,14 @@ export class Task {
   stepNumber!: number;
 
   @Column({ nullable: true, type: "text" })
+  input?: Stringified<Output> | null; // completed dependent task pass their output as current task's input
+
+  @Column({ nullable: true, type: "text" })
   output?: Stringified<Output> | null;
 
   @ManyToOne(() => Workflow, (workflow) => workflow.tasks)
   workflow!: Workflow;
+
+  @ManyToOne(() => Task, { nullable: true })
+  dependsOn?: Task | null; // Reference to another task, will wait for dependent task to complete before starting current task
 }

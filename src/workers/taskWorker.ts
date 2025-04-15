@@ -1,6 +1,9 @@
 import { AppDataSource } from "../data-source";
 import { Task } from "../models/Task";
-import { allPrecedingTasksCompletedOrFailed } from "./middleware/taskMiddleware";
+import {
+  checkAllPrecedingTasksInWorkflowCompletedOrFailed,
+  checkDependencyTaskInWorkflowCompleted,
+} from "./middleware/taskMiddleware";
 import { TaskRunner, TaskStatus } from "./taskRunner";
 
 export async function taskWorker() {
@@ -10,7 +13,7 @@ export async function taskWorker() {
   while (true) {
     const queuedTasks = await taskRepository.find({
       where: { status: TaskStatus.Queued },
-      relations: ["workflow"], // Ensure workflow is loaded
+      relations: ["workflow", "dependsOn"], // Ensure workflow and dependsOn is loaded
       order: { stepNumber: "ASC" },
     });
 
@@ -19,11 +22,28 @@ export async function taskWorker() {
         try {
           // Only check preceding tasks if the taskType is "reportGeneration"
           if (task.taskType === "reportGeneration") {
-            const proceed = await allPrecedingTasksCompletedOrFailed(task);
+            const proceed =
+              await checkAllPrecedingTasksInWorkflowCompletedOrFailed(task);
 
             if (!proceed) {
               console.log(
                 `Task ${task.taskId} is waiting for preceding tasks to complete or fail. Re-queuing the task.`
+              );
+              continue;
+            }
+          }
+
+          console.log(
+            `task: ${task.taskId} depends on ${
+              task.dependsOn?.taskId || "no dependency"
+            }`
+          );
+          if (task.dependsOn) {
+            const proceed = await checkDependencyTaskInWorkflowCompleted(task);
+
+            if (!proceed) {
+              console.log(
+                `Task ${task.taskId} is waiting for dependent task to complete or fail. Re-queuing the task.`
               );
               continue;
             }
@@ -37,6 +57,8 @@ export async function taskWorker() {
           );
           console.error(error);
         }
+
+        await new Promise((resolve) => setTimeout(resolve, 5000)); // poll for 5 seconds
       }
     }
 
