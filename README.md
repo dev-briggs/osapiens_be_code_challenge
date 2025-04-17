@@ -127,7 +127,7 @@ The aggregated results of all tasks in a workflow are saved in the `finalResult`
 Retrieve the current status of a workflow.
 
 #### Endpoint:
-- **URL:** `/workflow/:id/status`
+- **URL:** `/workflows/:id/status`
 - **Method:** `GET`
 
 #### Testing:
@@ -168,7 +168,7 @@ Retrieve the current status of a workflow.
    ```
 2. Use the following command to check the status of the created workflow:
    ```bash
-   curl -X GET http://localhost:3000/workflow/<workflow-id>/status
+   curl -X GET http://localhost:3000/workflows/<workflow-id>/status
    ```
 3. Verify the response includes the workflow status, completed tasks, and total tasks.
 
@@ -197,7 +197,7 @@ Make sure a workflow is created and the schema is not cleared before accessing t
 Retrieve the final results of a completed workflow.
 
 #### Endpoint:
-- **URL:** `/workflow/:id/results`
+- **URL:** `/workflows/:id/results`
 - **Method:** `GET`
 
 #### Testing:
@@ -238,7 +238,7 @@ Retrieve the final results of a completed workflow.
    ```
 2. Use the following command to retrieve the results of a completed workflow:
    ```bash
-   curl -X GET http://localhost:3000/workflow/<workflow-id>/results
+   curl -X GET http://localhost:3000/workflows/<workflow-id>/results
    ```
 3. Verify the response includes the `finalResult` field if the workflow is completed. If not, ensure appropriate error responses are returned.
 
@@ -317,7 +317,7 @@ src
 ├─ jobs/
 │   ├─ Job.ts           # Job interface
 │   ├─ JobFactory.ts    # getJobForTaskType function for mapping taskType to a Job
-│   ├─ TaskRunner.ts    # Handles job execution & task/workflow state transitions
+│   ├─ TaskRunner.ts    # Handles job execution & task/workflows state transitions
 │   ├─ DataAnalysisJob.ts (example)
 │   ├─ EmailNotificationJob.ts (example)
 │
@@ -512,7 +512,7 @@ Save the aggregated results of all tasks in the workflow as the `finalResult` fi
 Implement an API endpoint to retrieve the current status of a workflow.
 
 #### **Endpoint Specification:**
-- **URL:** `/workflow/:id/status`
+- **URL:** `/workflows/:id/status`
 - **Method:** `GET`
 - **Response Example:**
    ```json
@@ -535,7 +535,7 @@ Implement an API endpoint to retrieve the current status of a workflow.
 Implement an API endpoint to retrieve the final results of a completed workflow.
 
 #### **Endpoint Specification:**
-- **URL:** `/workflow/:id/results`
+- **URL:** `/workflows/:id/results`
 - **Method:** `GET`
 - **Response Example:**
    ```json
